@@ -43,10 +43,15 @@ def chat():
                 options={'num_ctx': 1500} # Keep < 2000 to fit GPU KV cache
             )
             for chunk in stream:
-                if 'message' in chunk and 'content' in chunk['message']:
-                    content = chunk['message']['content']
-                    # Yield as SSE format
-                    yield f"data: {json.dumps({'content': content})}\n\n"
+                if 'message' in chunk:
+                    msg = chunk['message']
+                    content = msg.get('content', '')
+                    reasoning = msg.get('reasoning', '')
+                    if not reasoning and 'thinking' in msg:
+                        reasoning = msg.get('thinking', '')
+                    
+                    if content or reasoning:
+                        yield f"data: {json.dumps({'content': content, 'reasoning': reasoning})}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
             

@@ -725,7 +725,8 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
             let assistantContent = '';
-
+            let hasSeparateReasoning = false;
+            let sepDisplayThink = '';
             try {
                 // Send password in payload for security
                 const response = await fetch('/chat', {
@@ -771,39 +772,57 @@
                             
                             try {
                                 const data = JSON.parse(dataStr);
-                                if (data.content) {
-                                    assistantContent += data.content;
-                                    
-                                    // Efficient DOM updates instead of bubble.innerHTML
-                                    let thinkStart = assistantContent.indexOf('<think>');
-                                    let thinkEnd = assistantContent.indexOf('</think>');
-                                    
-                                    let displayThink = '';
-                                    let displayMain = '';
-                                    
-                                    if (thinkStart !== -1) {
-                                        thinkDetails.style.display = 'block';
-                                        if (thinkEnd !== -1) {
-                                            displayThink = assistantContent.substring(thinkStart + 7, thinkEnd);
-                                            displayMain = assistantContent.substring(0, thinkStart) + assistantContent.substring(thinkEnd + 8);
-                                            thinkSummary.innerHTML = '💡 Thought Process';
-                                        } else {
-                                            displayThink = assistantContent.substring(thinkStart + 7);
-                                            displayMain = assistantContent.substring(0, thinkStart);
-                                            thinkSummary.innerHTML = '🤔 Thinking...';
-                                        }
-                                    } else {
-                                        displayMain = assistantContent;
+                                if (data.content || data.reasoning) {
+                                    if (data.reasoning) {
+                                        hasSeparateReasoning = true;
+                                        sepDisplayThink += data.reasoning;
+                                    }
+                                    if (data.content) {
+                                        assistantContent += data.content;
                                     }
                                     
-                                    if (thinkEnd !== -1) {
-                                        thinkContentDiv.innerHTML = marked.parse(displayThink);
-                                        mainContentDiv.innerHTML = marked.parse(displayMain) + '<span class="cursor"></span>';
-                                    } else if (thinkStart !== -1) {
-                                        thinkContentDiv.innerHTML = marked.parse(displayThink) + '<span class="cursor"></span>';
-                                        mainContentDiv.innerHTML = marked.parse(displayMain);
+                                    if (hasSeparateReasoning) {
+                                        thinkDetails.style.display = 'block';
+                                        if (assistantContent) {
+                                            thinkSummary.innerHTML = '💡 Thought Process';
+                                            thinkContentDiv.innerHTML = marked.parse(sepDisplayThink);
+                                            mainContentDiv.innerHTML = marked.parse(assistantContent) + '<span class="cursor"></span>';
+                                        } else {
+                                            thinkSummary.innerHTML = '🤔 Thinking...';
+                                            thinkContentDiv.innerHTML = marked.parse(sepDisplayThink) + '<span class="cursor"></span>';
+                                        }
                                     } else {
-                                        mainContentDiv.innerHTML = marked.parse(displayMain) + '<span class="cursor"></span>';
+                                        // Legacy: parsing <think> out of assistantContent
+                                        let thinkStart = assistantContent.indexOf('<think>');
+                                        let thinkEnd = assistantContent.indexOf('</think>');
+                                        
+                                        let displayThink = '';
+                                        let displayMain = '';
+                                        
+                                        if (thinkStart !== -1) {
+                                            thinkDetails.style.display = 'block';
+                                            if (thinkEnd !== -1) {
+                                                displayThink = assistantContent.substring(thinkStart + 7, thinkEnd);
+                                                displayMain = assistantContent.substring(0, thinkStart) + assistantContent.substring(thinkEnd + 8);
+                                                thinkSummary.innerHTML = '💡 Thought Process';
+                                            } else {
+                                                displayThink = assistantContent.substring(thinkStart + 7);
+                                                displayMain = assistantContent.substring(0, thinkStart);
+                                                thinkSummary.innerHTML = '🤔 Thinking...';
+                                            }
+                                        } else {
+                                            displayMain = assistantContent;
+                                        }
+                                        
+                                        if (thinkEnd !== -1) {
+                                            thinkContentDiv.innerHTML = marked.parse(displayThink);
+                                            mainContentDiv.innerHTML = marked.parse(displayMain) + '<span class="cursor"></span>';
+                                        } else if (thinkStart !== -1) {
+                                            thinkContentDiv.innerHTML = marked.parse(displayThink) + '<span class="cursor"></span>';
+                                            mainContentDiv.innerHTML = marked.parse(displayMain);
+                                        } else {
+                                            mainContentDiv.innerHTML = marked.parse(displayMain) + '<span class="cursor"></span>';
+                                        }
                                     }
                                     
                                     // Syntax highlighting debounced
@@ -838,7 +857,11 @@
                 
                 if (window.Prism) Prism.highlightAllUnder(aiBubble);
                 
-                conversationHistory.push({ role: 'assistant', content: assistantContent });
+                let finalContentToSave = assistantContent;
+                if (hasSeparateReasoning) {
+                    finalContentToSave = `<think>\n${sepDisplayThink}\n</think>\n${assistantContent}`;
+                }
+                conversationHistory.push({ role: 'assistant', content: finalContentToSave });
                 localStorage.setItem('cdfd_history', JSON.stringify(conversationHistory));
                 
                 isGenerating = false;
