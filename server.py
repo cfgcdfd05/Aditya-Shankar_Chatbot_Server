@@ -3,6 +3,22 @@ from flask_cors import CORS
 import ollama
 import json
 import threading
+import subprocess
+import time
+
+def ensure_ollama_running():
+    try:
+        ollama.list()  # cheap check — succeeds if daemon is up
+    except Exception:
+        print("Starting ollama serve...")
+        subprocess.Popen(
+            ["ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        time.sleep(3)  # give it time to bind
+
+ensure_ollama_running()
 
 # Global lock to ensure only one request uses the GPU at a time
 gpu_lock = threading.Lock()
@@ -50,16 +66,16 @@ def chat():
                     stream=True,
                     options={'num_ctx': 1500} # Keep < 2000 to fit GPU KV cache
                 )
-            for chunk in stream:
-                if 'message' in chunk:
-                    msg = chunk['message']
-                    content = msg.get('content', '')
-                    reasoning = msg.get('reasoning', '')
-                    if not reasoning and 'thinking' in msg:
-                        reasoning = msg.get('thinking', '')
-                    
-                    if content or reasoning:
-                        yield f"data: {json.dumps({'content': content, 'reasoning': reasoning})}\n\n"
+                for chunk in stream:
+                    if 'message' in chunk:
+                        msg = chunk['message']
+                        content = msg.get('content', '')
+                        reasoning = msg.get('reasoning', '')
+                        if not reasoning and 'thinking' in msg:
+                            reasoning = msg.get('thinking', '')
+                        
+                        if content or reasoning:
+                            yield f"data: {json.dumps({'content': content, 'reasoning': reasoning})}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
             

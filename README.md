@@ -1,4 +1,4 @@
-# Lumen LLM Chat
+# LLM Chat
 
 A self-contained, locally-hosted web chat interface that streams responses from a local Ollama model (`deepseek-r1:70b`). Built specifically for LAN access with a clean dark theme and lightweight vanilla technologies.
 
