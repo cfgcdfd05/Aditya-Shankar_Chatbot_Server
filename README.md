@@ -47,3 +47,4 @@ The authentication state is saved in the browser's `sessionStorage`. This means 
 - **Reasoning Blocks**: Support for formatting DeepSeek's `<think>` tags into collapsible reasoning blocks to keep the chat interface clean.
 - **Pure Vanilla Stack**: Just HTML, inline CSS, and vanilla JavaScript without bundlers or frameworks.
 - **In-Memory History**: A multi-turn conversation context is maintained within the browser session and automatically resets on page reload.
+- **Model Stays Loaded**: `keep_alive` is set to stay resident in VRAM indefinitely, so there's no reload delay between requests (only on first-ever query after server start).

@@ -64,6 +64,7 @@ def chat():
                     model='deepseek-r1:70b',
                     messages=messages,
                     stream=True,
+                    keep_alive=-1,
                     options={'num_ctx': 1500} # Keep < 2000 to fit GPU KV cache
                 )
                 for chunk in stream:
@@ -83,4 +84,5 @@ def chat():
 
 if __name__ == '__main__':
     # Bind to 0.0.0.0 for LAN access and use threaded=True for multiple concurrent users
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+    # debug=False since this is reachable by other devices on the LAN
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
