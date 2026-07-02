@@ -513,6 +513,7 @@
 
             
             <div class="sidebar-footer">
+                <button class="clear-btn" id="thinking-toggle" onclick="toggleThinking()">🧠 Thinking: On</button>
                 <button class="clear-btn" onclick="clearHistory()">Clear Session</button>
             </div>
         </aside>
@@ -545,6 +546,11 @@
         const authError = document.getElementById('auth-error');
         
         const messagesDiv = document.getElementById('messages');
+        let thinkingEnabled = true;
+        function toggleThinking() {
+            thinkingEnabled = !thinkingEnabled;
+            document.getElementById('thinking-toggle').textContent = thinkingEnabled ? '🧠 Thinking: On' : '🧠 Thinking: Off';
+        }
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
 
@@ -768,7 +774,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         messages: conversationHistory,
-                        password: sessionPassword
+                        password: sessionPassword,
+                        thinking: thinkingEnabled
                     }),
                     signal: abortController.signal
                 });
